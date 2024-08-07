@@ -1,7 +1,11 @@
 package com.macro.mall.tiny.modules.runningJerry.service;
 
+import com.macro.mall.tiny.common.api.CommonResult;
 import com.macro.mall.tiny.modules.runningJerry.model.Item;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.macro.mall.tiny.modules.runningJerry.vo.ItemVo;
+
+import java.util.List;
 
 /**
  * <p>
@@ -13,4 +17,5 @@ import com.baomidou.mybatisplus.extension.service.IService;
  */
 public interface ItemService extends IService<Item> {
 
+    CommonResult<List<ItemVo>> queryTree(Item item);
 }
