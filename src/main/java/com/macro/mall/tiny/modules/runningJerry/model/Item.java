@@ -44,6 +44,9 @@ public class Item implements Serializable {
     @ApiModelProperty("1-收入，2-支出，3-资产，4-负债")
     private Integer itemType;
 
+    @ApiModelProperty("名称")
+    private String name;
+
     @ApiModelProperty("值")
     private String value;
 

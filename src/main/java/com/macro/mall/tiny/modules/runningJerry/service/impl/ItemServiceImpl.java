@@ -12,6 +12,7 @@ import com.macro.mall.tiny.modules.runningJerry.vo.ChartYVo;
 import com.macro.mall.tiny.modules.runningJerry.vo.EchartsInVo;
 import com.macro.mall.tiny.modules.runningJerry.vo.EchartVo;
 import com.macro.mall.tiny.modules.runningJerry.vo.ItemVo;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
@@ -53,7 +54,6 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements It
      * @return {@link CommonResult}<{@link EchartVo}>
      */
     public CommonResult<List<EchartVo>> queryEcharts(EchartsInVo inVo) {
-//        List<EchartVo> echartVos = initEchartVoList(inVo);
         List<EchartVo> echartVos = new ArrayList<>();
         //月
         if (inVo.getPeriod().equals(1)) {
@@ -73,7 +73,8 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements It
                         .collect(Collectors.toList());
 
                 //收入
-                Map<Date, Double> income = list.stream().filter(i -> i.getType().equals(2) && i.getItemType().equals(1))
+                Map<Date, Double> income = list.stream().filter(i -> i.getType().equals(2) && i.getItemType().equals(1)
+                                && StringUtils.isNotEmpty(i.getValue()))
                         .collect(Collectors.groupingBy(Item::getDate,
                                 Collectors.summingDouble(i -> Double.parseDouble(i.getValue()))));
                 ChartYVo incomeChartYVo = new ChartYVo();
@@ -82,7 +83,8 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements It
                         .map(String::valueOf).collect(Collectors.toList());
                 incomeChartYVo.setYList(incomeValueStrings);
                 //支出
-                Map<Date, Double> expend = list.stream().filter(i -> i.getType().equals(2) && i.getItemType().equals(2))
+                Map<Date, Double> expend = list.stream().filter(i -> i.getType().equals(2) && i.getItemType().equals(2)
+                                && StringUtils.isNotEmpty(i.getValue()))
                         .collect(Collectors.groupingBy(Item::getDate,
                                 Collectors.summingDouble(i -> Double.parseDouble(i.getValue()))));
                 ChartYVo expendChartYVo = new ChartYVo();
@@ -93,11 +95,12 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements It
                 List<ChartYVo> chartYVos = new ArrayList<>();
                 chartYVos.add(incomeChartYVo);
                 chartYVos.add(expendChartYVo);
-                echartVos.add(new EchartVo("收入支出表", months,chartYVos));
+                echartVos.add(new EchartVo("收入支出表", months, chartYVos));
 
 
                 //资产
-                Map<Date, Double> property = list.stream().filter(i -> i.getType().equals(2) && i.getItemType().equals(3))
+                Map<Date, Double> property = list.stream().filter(i -> i.getType().equals(2) && i.getItemType().equals(3)
+                                && StringUtils.isNotEmpty(i.getValue()))
                         .collect(Collectors.groupingBy(Item::getDate,
                                 Collectors.summingDouble(i -> Double.parseDouble(i.getValue()))));
                 ChartYVo propertyChartYVo = new ChartYVo();
@@ -106,7 +109,8 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements It
                         .map(String::valueOf).collect(Collectors.toList());
                 propertyChartYVo.setYList(propertyValueStrings);
                 //负债
-                Map<Date, Double> debt = list.stream().filter(i -> i.getType().equals(2) && i.getItemType().equals(4))
+                Map<Date, Double> debt = list.stream().filter(i -> i.getType().equals(2) && i.getItemType().equals(4)
+                                && StringUtils.isNotEmpty(i.getValue()))
                         .collect(Collectors.groupingBy(Item::getDate,
                                 Collectors.summingDouble(i -> Double.parseDouble(i.getValue()))));
                 ChartYVo debtChartYVo = new ChartYVo();
@@ -117,12 +121,49 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements It
                 List<ChartYVo> debtChartYVos = new ArrayList<>();
                 debtChartYVos.add(propertyChartYVo);
                 debtChartYVos.add(debtChartYVo);
-                echartVos.add(new EchartVo("资产负债表", months,debtChartYVos));
+                echartVos.add(new EchartVo("资产负债表", months, debtChartYVos));
+
+                //总资产收益线
+                List<ChartYVo> propertyChartYVos = new ArrayList<>();
+                ChartYVo roaChartYVo = new ChartYVo();
+                roaChartYVo.setLineName("总资产");
+                List<String> roa = getROA(new ArrayList<>(property.values()));
+                roaChartYVo.setYList(roa);
+                propertyChartYVos.add(roaChartYVo);
+                //每一个资产的收益率曲线
+                Map<String, List<Item>> collect = list.stream().filter(i -> i.getType().equals(2) && i.getItemType().equals(3)
+                                && StringUtils.isNotEmpty(i.getValue()))
+                        .collect(Collectors.groupingBy(Item::getName
+                        ));
+                collect.forEach((key, value) -> {
+                    ChartYVo oneRoaChartYVo = new ChartYVo();
+                    oneRoaChartYVo.setLineName(key);
+                    List<Double> collect1 = value.stream().map(i -> Double.parseDouble(i.getValue())).collect(Collectors.toList());
+                    oneRoaChartYVo.setYList(getROA(collect1));
+                    propertyChartYVos.add(oneRoaChartYVo);
+                });
+                echartVos.add(new EchartVo("资产收益表", months, propertyChartYVos));
 
 
-                echartVos.add(new EchartVo("资产收益表", months, new ArrayList<>(1)));
-                echartVos.add(new EchartVo("资产二阶导表", months, new ArrayList<>(1)));
-
+                List<ChartYVo> twoPropertyChartYVos = new ArrayList<>();
+                ChartYVo twoRoaChartYVo = new ChartYVo();
+                twoRoaChartYVo.setLineName("总资产");
+                List<String> twoRoa = getTwoROA(new ArrayList<>(property.values()));
+                twoRoaChartYVo.setYList(twoRoa);
+                twoPropertyChartYVos.add(twoRoaChartYVo);
+                //每一个资产的收益率曲线
+                Map<String, List<Item>> twoRoaCollect = list.stream().filter(i -> i.getType().equals(2) && i.getItemType().equals(3)
+                                && StringUtils.isNotEmpty(i.getValue()))
+                        .collect(Collectors.groupingBy(Item::getName
+                        ));
+                twoRoaCollect.forEach((key, value) -> {
+                    ChartYVo oneRoaChartYVo = new ChartYVo();
+                    oneRoaChartYVo.setLineName(key);
+                    List<Double> collect1 = value.stream().map(i -> Double.parseDouble(i.getValue())).collect(Collectors.toList());
+                    oneRoaChartYVo.setYList(getTwoROA(collect1));
+                    twoPropertyChartYVos.add(oneRoaChartYVo);
+                });
+                echartVos.add(new EchartVo("资产二阶导表", months, twoPropertyChartYVos));
             }
         }
         //年
@@ -130,6 +171,55 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements It
 
         }
         return CommonResult.success(echartVos);
+    }
+
+    /**
+     * 获取资产收益率
+     *
+     * @param originalList 资产list
+     * @return {@link List}<{@link String}>
+     */
+    public static List<String> getROA(List<Double> originalList) {
+        List<String> newList = new ArrayList<>();
+
+        for (int i = 0; i < originalList.size(); i++) {
+            double current = originalList.get(i);
+            double previous = (i == 0) ? current : originalList.get(i - 1);
+            double result = ((double) current / previous - 1) * 100;
+            newList.add(String.format("%.0f%%", result));
+        }
+        return newList;
+    }
+
+    /**
+     * 获取资产收益率二阶导
+     *
+     * @param originalList 资产list
+     * @return {@link List}<{@link String}>
+     */
+    public static List<String> getTwoROA(List<Double> originalList) {
+        List<Double> firstDifferences = new ArrayList<>();
+        List<Double> secondDifferences = new ArrayList<>();
+
+        // Calculate first differences
+        for (int i = 0; i < originalList.size(); i++) {
+            double previous = (i == 0) ? originalList.get(i) : originalList.get(i - 1);
+            firstDifferences.add(originalList.get(i) - previous);
+        }
+
+        // Calculate second differences
+        for (int i = 0; i < firstDifferences.size(); i++) {
+            double previous = (i == 0) ? firstDifferences.get(i) : firstDifferences.get(i - 1);
+            secondDifferences.add(firstDifferences.get(i) - previous);
+        }
+
+        // Convert to String with percentage format
+        List<String> result = new ArrayList<>();
+        for (double value : secondDifferences) {
+            result.add(String.format("%.0f%%", value * 100));
+        }
+
+        return result;
     }
 
     /**
