@@ -19,5 +19,5 @@ public class EchartsInVo {
     private Integer period;
     private Integer year;
     @ApiModelProperty("用户id")
-    private Long adminId;
+    private String userName;
 }

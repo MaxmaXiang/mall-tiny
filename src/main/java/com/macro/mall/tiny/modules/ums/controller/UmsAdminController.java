@@ -65,7 +65,7 @@ public class UmsAdminController {
             return CommonResult.validateFailed("用户名或密码错误");
         }
         Map<String, String> tokenMap = new HashMap<>();
-        tokenMap.put("token", token);
+        tokenMap.put("token", "Bearer "+token);
         tokenMap.put("tokenHead", tokenHead);
         return CommonResult.success(tokenMap);
     }
@@ -80,7 +80,7 @@ public class UmsAdminController {
             return CommonResult.failed("token已经过期！");
         }
         Map<String, String> tokenMap = new HashMap<>();
-        tokenMap.put("token", refreshToken);
+        tokenMap.put("token", "Bearer "+refreshToken);
         tokenMap.put("tokenHead", tokenHead);
         return CommonResult.success(tokenMap);
     }
@@ -95,6 +95,7 @@ public class UmsAdminController {
         String username = principal.getName();
         UmsAdmin umsAdmin = adminService.getAdminByUsername(username);
         Map<String, Object> data = new HashMap<>();
+        data.put("id", umsAdmin.getId());
         data.put("username", umsAdmin.getUsername());
         data.put("menus", roleService.getMenuList(umsAdmin.getId()));
         data.put("icon", umsAdmin.getIcon());

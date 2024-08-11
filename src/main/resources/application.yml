@@ -52,3 +52,5 @@ secure:
       - /admin/register
       - /admin/info
       - /admin/logout
+      - /runningJerry/**
+

@@ -1,17 +1,19 @@
 package com.macro.mall.tiny.modules.runningJerry.model;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.data.annotation.Transient;
+import org.springframework.format.annotation.DateTimeFormat;
 
 /**
  * <p>
@@ -33,7 +35,7 @@ public class Item implements Serializable {
     private Integer id;
 
     @ApiModelProperty("用户id")
-    private Long adminId;
+    private String userName;
 
     @ApiModelProperty("父id")
     private Integer parentId;
@@ -51,6 +53,8 @@ public class Item implements Serializable {
     private String value;
 
     @ApiModelProperty("归属日期")
+    @DateTimeFormat(pattern = "yyyy-MM-dd")
+    @JsonFormat(pattern = "yyyy-MM-dd", timezone = "GMT+8")
     private Date date;
 
     @ApiModelProperty("创建者")
@@ -69,6 +73,6 @@ public class Item implements Serializable {
     private Integer ifDelete;
 
     @ApiModelProperty("子item列表")
-    @Transient
+    @TableField(exist = false)
     private List<Item> children;
 }

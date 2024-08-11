@@ -33,7 +33,7 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements It
     public CommonResult<List<ItemVo>> queryTree(Item item) {
         List<ItemVo> itemVos = initItemVoList();
         QueryWrapper<Item> wrapper = new QueryWrapper<>();
-        wrapper.lambda().eq(Item::getAdminId, item.getAdminId());
+        wrapper.lambda().eq(Item::getUserName, item.getUserName()).eq(Item::getIfDelete,0).eq(Item::getDate,item.getDate());
         List<Item> list = list(wrapper);
         if (!CollectionUtils.isEmpty(list)) {
             Map<Integer, List<Item>> collect = list.stream().collect(Collectors.groupingBy(Item::getItemType));
@@ -61,7 +61,7 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements It
 
             DateTime parse = DateUtil.parse(inVo.getYear() + "-01-01");
             wrapper.lambda()
-                    .eq(Item::getAdminId, inVo.getAdminId())
+                    .eq(Item::getUserName, inVo.getUserName())
                     .eq(Item::getIfDelete, 0).between(Item::getDate,
                             DateUtil.beginOfYear(parse),
                             DateUtil.endOfYear(parse));
