@@ -2,8 +2,10 @@ package com.macro.mall.tiny.modules.runningJerry.controller;
 
 
 
+
 import com.macro.mall.tiny.common.api.CommonResult;
 import com.macro.mall.tiny.modules.runningJerry.model.Item;
+
 import com.macro.mall.tiny.modules.runningJerry.service.ItemService;
 import com.macro.mall.tiny.modules.runningJerry.vo.EchartsInVo;
 import com.macro.mall.tiny.modules.runningJerry.vo.EchartVo;
@@ -30,23 +32,20 @@ public class ItemController {
     @Autowired
     private ItemService itemService;
 
+
     @ApiOperation(value = "新增")
     @RequestMapping(value = "/insert", method = RequestMethod.POST)
     @ResponseBody
     public CommonResult<Item> insert(@Validated @RequestBody Item item) {
-        item.setCreateTime(new Date());
-        item.setIfDelete(0);
-        itemService.save(item);
-        return CommonResult.success(item);
+        return itemService.insert(item);
+
     }
 
     @ApiOperation(value = "修改")
     @RequestMapping(value = "/update", method = RequestMethod.POST)
     @ResponseBody
     public CommonResult<Item> update(@Validated @RequestBody Item item) {
-        item.setUpdateTime(new Date());
-        itemService.updateById(item);
-        return CommonResult.success(item);
+        return itemService.myUpdate(item);
     }
 
     @ApiOperation(value = "删除")

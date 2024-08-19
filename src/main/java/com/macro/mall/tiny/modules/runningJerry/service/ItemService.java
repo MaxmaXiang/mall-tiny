@@ -22,4 +22,8 @@ public interface ItemService extends IService<Item> {
     CommonResult<List<ItemVo>> queryTree(Item item);
 
     CommonResult<List<EchartVo>> queryEcharts(EchartsInVo inVo);
+
+    CommonResult<Item> insert(Item item);
+
+    CommonResult<Item> myUpdate(Item item);
 }

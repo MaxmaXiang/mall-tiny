@@ -12,7 +12,6 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Getter;
 import lombok.Setter;
-import org.springframework.data.annotation.Transient;
 import org.springframework.format.annotation.DateTimeFormat;
 
 /**
@@ -71,6 +70,9 @@ public class Item implements Serializable {
 
     @ApiModelProperty("1-已删除，0-未删除")
     private Integer ifDelete;
+
+    @ApiModelProperty("循环模式，1-单次，2-每月")
+    private Integer loopMode;
 
     @ApiModelProperty("子item列表")
     @TableField(exist = false)

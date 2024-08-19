@@ -6,6 +6,8 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.macro.mall.tiny.common.api.CommonResult;
 import com.macro.mall.tiny.modules.runningJerry.model.Item;
 import com.macro.mall.tiny.modules.runningJerry.mapper.ItemMapper;
+import com.macro.mall.tiny.modules.runningJerry.model.ItemRecord;
+import com.macro.mall.tiny.modules.runningJerry.service.ItemRecordService;
 import com.macro.mall.tiny.modules.runningJerry.service.ItemService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.macro.mall.tiny.modules.runningJerry.vo.ChartYVo;
@@ -13,6 +15,7 @@ import com.macro.mall.tiny.modules.runningJerry.vo.EchartsInVo;
 import com.macro.mall.tiny.modules.runningJerry.vo.EchartVo;
 import com.macro.mall.tiny.modules.runningJerry.vo.ItemVo;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
@@ -30,11 +33,17 @@ import java.util.stream.IntStream;
  */
 @Service
 public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements ItemService {
+
+
+    @Autowired
+    private ItemRecordService itemRecordService;
+    @Autowired
+    private ItemMapper itemMapper;
+
     public CommonResult<List<ItemVo>> queryTree(Item item) {
         List<ItemVo> itemVos = initItemVoList();
-        QueryWrapper<Item> wrapper = new QueryWrapper<>();
-        wrapper.lambda().eq(Item::getUserName, item.getUserName()).eq(Item::getIfDelete,0).eq(Item::getDate,item.getDate());
-        List<Item> list = list(wrapper);
+        List<Item> list = itemMapper.listRecord(item);
+
         if (!CollectionUtils.isEmpty(list)) {
             Map<Integer, List<Item>> collect = list.stream().collect(Collectors.groupingBy(Item::getItemType));
             itemVos.forEach(itemVo -> {
@@ -57,15 +66,11 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements It
         List<EchartVo> echartVos = new ArrayList<>();
         //月
         if (inVo.getPeriod().equals(1)) {
-            QueryWrapper<Item> wrapper = new QueryWrapper<>();
 
             DateTime parse = DateUtil.parse(inVo.getYear() + "-01-01");
-            wrapper.lambda()
-                    .eq(Item::getUserName, inVo.getUserName())
-                    .eq(Item::getIfDelete, 0).between(Item::getDate,
-                            DateUtil.beginOfYear(parse),
-                            DateUtil.endOfYear(parse));
-            List<Item> list = list(wrapper);
+            inVo.setStartDate(DateUtil.beginOfYear(parse));
+            inVo.setEndDate(DateUtil.endOfYear(parse));
+            List<Item> list = itemMapper.listRecordEcharts(inVo);
             //按月分组
             if (!CollectionUtils.isEmpty(list)) {
                 List<String> months = IntStream.rangeClosed(1, 12)
@@ -79,8 +84,16 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements It
                                 Collectors.summingDouble(i -> Double.parseDouble(i.getValue()))));
                 ChartYVo incomeChartYVo = new ChartYVo();
                 incomeChartYVo.setLineName("收入");
-                List<String> incomeValueStrings = income.values().stream()
-                        .map(String::valueOf).collect(Collectors.toList());
+                List<String> incomeValueStrings = months.stream().map(month -> {
+                    DateTime monthDate = DateUtil.parse(inVo.getYear() + "-" + month.charAt(0) + "-01");
+                    Double v = income.get(monthDate);
+                    if (v != null) {
+                        return String.valueOf(v);
+                    } else {
+                        return "0";
+                    }
+                }).collect(Collectors.toList());
+
                 incomeChartYVo.setYList(incomeValueStrings);
                 //支出
                 Map<Date, Double> expend = list.stream().filter(i -> i.getType().equals(2) && i.getItemType().equals(2)
@@ -89,8 +102,15 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements It
                                 Collectors.summingDouble(i -> Double.parseDouble(i.getValue()))));
                 ChartYVo expendChartYVo = new ChartYVo();
                 expendChartYVo.setLineName("支出");
-                List<String> expendValueStrings = expend.values().stream()
-                        .map(String::valueOf).collect(Collectors.toList());
+                List<String> expendValueStrings = months.stream().map(month -> {
+                    DateTime monthDate = DateUtil.parse(inVo.getYear() + "-" + month.charAt(0) + "-01");
+                    Double v = expend.get(monthDate);
+                    if (v != null) {
+                        return String.valueOf(v);
+                    } else {
+                        return "0";
+                    }
+                }).collect(Collectors.toList());
                 expendChartYVo.setYList(expendValueStrings);
                 List<ChartYVo> chartYVos = new ArrayList<>();
                 chartYVos.add(incomeChartYVo);
@@ -105,8 +125,15 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements It
                                 Collectors.summingDouble(i -> Double.parseDouble(i.getValue()))));
                 ChartYVo propertyChartYVo = new ChartYVo();
                 propertyChartYVo.setLineName("资产");
-                List<String> propertyValueStrings = property.values().stream()
-                        .map(String::valueOf).collect(Collectors.toList());
+                List<String> propertyValueStrings = months.stream().map(month -> {
+                    DateTime monthDate = DateUtil.parse(inVo.getYear() + "-" + month.charAt(0) + "-01");
+                    Double v = property.get(monthDate);
+                    if (v != null) {
+                        return String.valueOf(v);
+                    } else {
+                        return "0";
+                    }
+                }).collect(Collectors.toList());
                 propertyChartYVo.setYList(propertyValueStrings);
                 //负债
                 Map<Date, Double> debt = list.stream().filter(i -> i.getType().equals(2) && i.getItemType().equals(4)
@@ -115,8 +142,15 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements It
                                 Collectors.summingDouble(i -> Double.parseDouble(i.getValue()))));
                 ChartYVo debtChartYVo = new ChartYVo();
                 debtChartYVo.setLineName("负债");
-                List<String> debtValueStrings = debt.values().stream()
-                        .map(String::valueOf).collect(Collectors.toList());
+                List<String> debtValueStrings = months.stream().map(month -> {
+                    DateTime monthDate = DateUtil.parse(inVo.getYear() + "-" + month.charAt(0) + "-01");
+                    Double v = debt.get(monthDate);
+                    if (v != null) {
+                        return String.valueOf(v);
+                    } else {
+                        return "0";
+                    }
+                }).collect(Collectors.toList());
                 debtChartYVo.setYList(debtValueStrings);
                 List<ChartYVo> debtChartYVos = new ArrayList<>();
                 debtChartYVos.add(propertyChartYVo);
@@ -127,7 +161,11 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements It
                 List<ChartYVo> propertyChartYVos = new ArrayList<>();
                 ChartYVo roaChartYVo = new ChartYVo();
                 roaChartYVo.setLineName("总资产");
-                List<String> roa = getROA(new ArrayList<>(property.values()));
+                List<Double> debtValueDoubles = debtValueStrings.stream()
+                        .mapToDouble(Double::valueOf) // 将字符串转换为double
+                        .boxed() // 将DoubleStream转换为Stream<Double>
+                        .collect(Collectors.toList());
+                List<String> roa = getROA(debtValueDoubles);
                 roaChartYVo.setYList(roa);
                 propertyChartYVos.add(roaChartYVo);
                 //每一个资产的收益率曲线
@@ -139,16 +177,18 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements It
                     ChartYVo oneRoaChartYVo = new ChartYVo();
                     oneRoaChartYVo.setLineName(key);
                     List<Double> collect1 = value.stream().map(i -> Double.parseDouble(i.getValue())).collect(Collectors.toList());
+
                     oneRoaChartYVo.setYList(getROA(collect1));
                     propertyChartYVos.add(oneRoaChartYVo);
                 });
                 echartVos.add(new EchartVo("资产收益表", months, propertyChartYVos));
 
 
+                //资产二阶导表
                 List<ChartYVo> twoPropertyChartYVos = new ArrayList<>();
                 ChartYVo twoRoaChartYVo = new ChartYVo();
                 twoRoaChartYVo.setLineName("总资产");
-                List<String> twoRoa = getTwoROA(new ArrayList<>(property.values()));
+                List<String> twoRoa = getTwoROA(debtValueDoubles);
                 twoRoaChartYVo.setYList(twoRoa);
                 twoPropertyChartYVos.add(twoRoaChartYVo);
                 //每一个资产的收益率曲线
@@ -173,6 +213,43 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements It
         return CommonResult.success(echartVos);
     }
 
+    @Override
+    public CommonResult<Item> insert(Item item) {
+        item.setCreateTime(new Date());
+        item.setIfDelete(0);
+        save(item);
+
+        saveOrUpdateRecord(item);
+
+        return CommonResult.success(item);
+    }
+
+    @Override
+    public CommonResult<Item> myUpdate(Item item) {
+        item.setUpdateTime(new Date());
+        updateById(item);
+
+        saveOrUpdateRecord(item);
+
+        return CommonResult.success(item);
+    }
+
+    private void saveOrUpdateRecord(Item item) {
+        QueryWrapper<ItemRecord> queryWrapper = new QueryWrapper<>();
+        queryWrapper.lambda().eq(ItemRecord::getItemId, item.getId()).eq(ItemRecord::getDate, item.getDate()); // 假设 unique_column 是你的唯一索引字段
+
+        ItemRecord itemRecord = new ItemRecord();
+        itemRecord.setItemId(item.getId());
+        itemRecord.setDate(item.getDate());
+        itemRecord.setValue(item.getValue());
+        // 首先尝试更新
+        boolean update = itemRecordService.update(itemRecord, queryWrapper);
+        if (!update) {
+            // 如果更新行数为0，说明没有找到匹配的唯一索引，执行插入操作
+            itemRecordService.save(itemRecord);
+        }
+    }
+
     /**
      * 获取资产收益率
      *
@@ -185,8 +262,12 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements It
         for (int i = 0; i < originalList.size(); i++) {
             double current = originalList.get(i);
             double previous = (i == 0) ? current : originalList.get(i - 1);
-            double result = ((double) current / previous - 1) * 100;
-            newList.add(String.format("%.0f%%", result));
+            if (previous == 0) {
+                newList.add("0");
+            } else {
+                double result = ( current / previous - 1) * 100;
+                newList.add(String.format("%.0f%%", result));
+            }
         }
         return newList;
     }
@@ -222,24 +303,6 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements It
         return result;
     }
 
-    /**
-     * initechartVolist
-     *
-     * @return {@link List}<{@link EchartVo}>
-     */
-    private List<EchartVo> initEchartVoList(EchartsInVo inVo) {
-        List<EchartVo> echartVos = new ArrayList<>();
-        if (inVo.getPeriod().equals(1)) {
-            List<String> months = IntStream.rangeClosed(1, 12)
-                    .mapToObj(i -> i + "月")
-                    .collect(Collectors.toList());
-            echartVos.add(new EchartVo("收入支出表", months, new ArrayList<>(1)));
-            echartVos.add(new EchartVo("资产负债表", months, new ArrayList<>(1)));
-            echartVos.add(new EchartVo("资产收益表", months, new ArrayList<>(1)));
-            echartVos.add(new EchartVo("资产二阶导表", months, new ArrayList<>(1)));
-        }
-        return echartVos;
-    }
 
     /**
      * @param items 项list

@@ -4,19 +4,51 @@
 
     <!-- 通用查询映射结果 -->
     <resultMap id="BaseResultMap" type="com.macro.mall.tiny.modules.runningJerry.model.Item">
-        <id column="id" property="id" />
-        <result column="type" property="type" />
-        <result column="user_name" property="userName" />
-        <result column="item_type" property="itemType" />
-        <result column="value" property="value" />
-        <result column="name" property="name" />
-        <result column="date" property="date" />
-        <result column="create_by" property="createBy" />
-        <result column="create_time" property="createTime" />
-        <result column="update_by" property="updateBy" />
-        <result column="update_time" property="updateTime" />
-        <result column="if_delete" property="ifDelete" />
-        <result column="parent_id" property="parentId" />
+        <id column="id" property="id"/>
+        <result column="type" property="type"/>
+        <result column="user_name" property="userName"/>
+        <result column="item_type" property="itemType"/>
+        <result column="value" property="value"/>
+        <result column="name" property="name"/>
+        <result column="date" property="date"/>
+        <result column="create_by" property="createBy"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_by" property="updateBy"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="if_delete" property="ifDelete"/>
+        <result column="parent_id" property="parentId"/>
+        <result column="loop_mode" property="loopMode"/>
     </resultMap>
+    <select id="listRecord" resultType="com.macro.mall.tiny.modules.runningJerry.model.Item">
+        select item.id,
+               item.type,
+               item.item_type as itemType,
+               item.user_name as userName,
+               item.name,
+               item.parent_id as parentId,
+               item_record.date,
+               item_record.value
+        from item
+                 left join item_record on item.id = item_record.item_id and item_record.date = #{date}
+        where item.if_delete = 0
+          and item.user_name = #{userName}
+          and ((item.loop_mode = 1 and item_record.date = #{date}) or item.loop_mode = 2)
+    </select>
+    <select id="listRecordEcharts" resultType="com.macro.mall.tiny.modules.runningJerry.model.Item">
+        select item.id,
+               item.type,
+               item.item_type as itemType,
+               item.user_name as userName,
+               item.name,
+               item.parent_id as parentId,
+               item_record.date,
+               item_record.value
+        from item
+                 left join item_record
+                           on item.id = item_record.item_id and item_record.date between #{startDate} and #{endDate}
+        where item.if_delete = 0
+          and item.user_name = #{userName}
+    </select>
+
 
 </mapper>
