@@ -77,4 +77,8 @@ public class Item implements Serializable {
     @ApiModelProperty("子item列表")
     @TableField(exist = false)
     private List<Item> children;
+
+    @ApiModelProperty("tag列表")
+    @TableField(exist = false)
+    private List<ItemTag> tagList;
 }
