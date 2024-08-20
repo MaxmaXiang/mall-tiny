@@ -80,7 +80,7 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements It
 
             //按月分组
             List<String> months = IntStream.rangeClosed(1, 12)
-                    .mapToObj(i -> i + "月")
+                    .mapToObj(i -> i + "")
                     .collect(Collectors.toList());
             calculateCharts(list, months, echartVos, inVo, 1);
 
@@ -94,7 +94,7 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements It
 
 
             List<String> months = IntStream.rangeClosed(DateUtil.year(inVo.getStartDate()), DateUtil.year(inVo.getEndDate()))
-                    .mapToObj(i -> i + "年")
+                    .mapToObj(i -> i+"" )
                     .collect(Collectors.toList());
 
             calculateCharts(list, months, echartVos, inVo, 2);
@@ -203,7 +203,7 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements It
 
     private String getYByX(String month, Integer level, Map<Date, Double> income, EchartsInVo inVo) {
         if (level == 1) {
-            DateTime monthDate = DateUtil.parse(inVo.getYear() + "-" + month.charAt(0) + "-01");
+            DateTime monthDate = DateUtil.parse(inVo.getYear() + "-" + month + "-01");
             Double v = income.get(monthDate);
             if (v != null) {
                 return String.valueOf(v);
@@ -211,7 +211,7 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements It
                 return "0";
             }
         } else {
-            DateTime yearDate = DateUtil.parse(month.charAt(0) + "-01-01");
+            DateTime yearDate = DateUtil.parse(month + "-01-01");
             Double v = income.get(yearDate);
             if (v != null) {
                 return String.valueOf(v);
