@@ -3,6 +3,7 @@ package com.macro.mall.tiny.modules.runningJerry.service;
 import com.macro.mall.tiny.common.api.CommonResult;
 import com.macro.mall.tiny.modules.runningJerry.model.Item;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.macro.mall.tiny.modules.runningJerry.vo.ChartVo;
 import com.macro.mall.tiny.modules.runningJerry.vo.EchartsInVo;
 import com.macro.mall.tiny.modules.runningJerry.vo.EchartVo;
 import com.macro.mall.tiny.modules.runningJerry.vo.ItemVo;
@@ -21,7 +22,7 @@ public interface ItemService extends IService<Item> {
 
     CommonResult<List<ItemVo>> queryTree(Item item);
 
-    CommonResult<List<EchartVo>> queryEcharts(EchartsInVo inVo);
+    CommonResult<List<ChartVo>> queryEcharts(EchartsInVo inVo);
 
     CommonResult<Item> insert(Item item);
 

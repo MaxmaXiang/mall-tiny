@@ -49,6 +49,20 @@
         where item.if_delete = 0
           and item.user_name = #{userName}
     </select>
+    <select id="listRecordEchartsNew" resultType="com.macro.mall.tiny.modules.runningJerry.model.Item">
+        SELECT
+            item_record.date,
+            item_type itemType,
+            sum(item.`value`) value
+        FROM
+            item
+                INNER JOIN item_record ON item.id = item_record.item_id
+        WHERE
+            user_name = #{userName}
+          AND if_delete = 0
+          AND item_record.date BETWEEN #{startDate} and #{endDate}
+        GROUP BY item_record.date,item_type
+    </select>
 
 
 </mapper>

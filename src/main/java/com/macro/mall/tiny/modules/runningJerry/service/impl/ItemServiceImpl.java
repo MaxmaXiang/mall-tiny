@@ -14,10 +14,7 @@ import com.macro.mall.tiny.modules.runningJerry.service.ItemRecordService;
 import com.macro.mall.tiny.modules.runningJerry.service.ItemService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.macro.mall.tiny.modules.runningJerry.service.ItemTagRelationService;
-import com.macro.mall.tiny.modules.runningJerry.vo.ChartYVo;
-import com.macro.mall.tiny.modules.runningJerry.vo.EchartsInVo;
-import com.macro.mall.tiny.modules.runningJerry.vo.EchartVo;
-import com.macro.mall.tiny.modules.runningJerry.vo.ItemVo;
+import com.macro.mall.tiny.modules.runningJerry.vo.*;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -68,21 +65,32 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements It
      * @param inVo inVo
      * @return {@link CommonResult}<{@link EchartVo}>
      */
-    public CommonResult<List<EchartVo>> queryEcharts(EchartsInVo inVo) {
-        List<EchartVo> echartVos = new ArrayList<>();
+    public CommonResult<List<ChartVo>> queryEcharts(EchartsInVo inVo) {
+        List<ChartVo> echartVos = new ArrayList<>(1);
         //月
         if (inVo.getPeriod().equals(1)) {
-
             DateTime parse = DateUtil.parse(inVo.getYear() + "-01-01");
             inVo.setStartDate(DateUtil.beginOfYear(parse));
             inVo.setEndDate(DateUtil.endOfYear(parse));
-            List<Item> list = itemMapper.listRecordEcharts(inVo);
+            List<Item> list = itemMapper.listRecordEchartsNew(inVo);
 
             //按月分组
-            List<String> months = IntStream.rangeClosed(1, 12)
-                    .mapToObj(i -> i + "")
+            echartVos = IntStream.rangeClosed(1, 12)
+                    .mapToObj(i -> {
+                        ChartVo chartVo = new ChartVo();
+                        chartVo.setDateStr(String.valueOf(i));
+                        chartVo.setDate(DateUtil.parse(inVo.getYear() + "-" + chartVo.getDateStr() + "-01"));
+                        calOneDate(list, chartVo);
+                        return chartVo;
+                    })
                     .collect(Collectors.toList());
-            calculateCharts(list, months, echartVos, inVo, 1);
+
+            //计算收益变化
+            calPropertySecondOrderAdmittance(echartVos);
+
+            return CommonResult.success(echartVos);
+
+//            calculateCharts(list, months, echartVos, inVo, 1);
 
         }
         //年
@@ -90,16 +98,52 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements It
             DateTime dateTime = new DateTime();
             inVo.setStartDate(DateUtil.beginOfYear(DateUtil.offset(dateTime, DateField.YEAR, -12)));
             inVo.setEndDate(DateUtil.endOfYear(dateTime));
-            List<Item> list = itemMapper.listRecordEcharts(inVo);
+            List<Item> list = itemMapper.listRecordEchartsNew(inVo);
+            list.forEach(item -> item.setDate(DateUtil.beginOfYear(item.getDate())));
 
-
-            List<String> months = IntStream.rangeClosed(DateUtil.year(inVo.getStartDate()), DateUtil.year(inVo.getEndDate()))
-                    .mapToObj(i -> i+"" )
+            echartVos = IntStream.rangeClosed(DateUtil.year(inVo.getStartDate()), DateUtil.year(inVo.getEndDate()))
+                    .mapToObj(i -> {
+                        ChartVo chartVo = new ChartVo();
+                        chartVo.setDateStr(String.valueOf(i));
+                        chartVo.setDate(DateUtil.parse(chartVo.getDateStr() + "-01-01"));
+                        calOneDate(list, chartVo);
+                        return chartVo;
+                    })
                     .collect(Collectors.toList());
 
-            calculateCharts(list, months, echartVos, inVo, 2);
+            //计算收益变化
+            calPropertySecondOrderAdmittance(echartVos);
+
+//            calculateCharts(list, months, echartVos, inVo, 2);
+            return CommonResult.success(echartVos);
         }
         return CommonResult.success(echartVos);
+    }
+
+    private void calPropertySecondOrderAdmittance(List<ChartVo> echartVos) {
+        for (int i = 0; i < echartVos.size(); i++) {
+            double previous = (i == 0) ? echartVos.get(i).getProfit() : echartVos.get(i - 1).getProfit();
+            echartVos.get(i).setPropertySecondOrderAdmittance(echartVos.get(i).getProfit()-previous);
+        }
+    }
+
+    private void calOneDate(List<Item> list, ChartVo chartVo) {
+        List<Item> collect = list.stream().filter(item -> item.getDate().equals(chartVo.getDate())).collect(Collectors.toList());
+        if (!CollectionUtils.isEmpty(collect)) {
+            double sum1 = collect.stream().filter(item -> item.getItemType().equals(1)).map(Item::getValue).mapToDouble(Double::valueOf).sum();
+            chartVo.setIncome(sum1);
+
+            double sum2 = collect.stream().filter(item -> item.getItemType().equals(2)).map(Item::getValue).mapToDouble(Double::valueOf).sum();
+            chartVo.setExpend(sum2);
+
+            chartVo.setProfit(chartVo.getIncome()-chartVo.getExpend());
+
+            double sum3 = collect.stream().filter(item -> item.getItemType().equals(3)).map(Item::getValue).mapToDouble(Double::valueOf).sum();
+            chartVo.setProperty(sum3);
+
+            double sum4 = collect.stream().filter(item -> item.getItemType().equals(4)).map(Item::getValue).mapToDouble(Double::valueOf).sum();
+            chartVo.setDebt(sum4);
+        }
     }
 
     private void calculateCharts(List<Item> list, List<String> months, List<EchartVo> echartVos, EchartsInVo inVo, Integer level) {

@@ -2,6 +2,7 @@ package com.macro.mall.tiny.modules.runningJerry.mapper;
 
 import com.macro.mall.tiny.modules.runningJerry.model.Item;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.macro.mall.tiny.modules.runningJerry.vo.ChartVo;
 import com.macro.mall.tiny.modules.runningJerry.vo.EchartsInVo;
 
 import java.util.List;
@@ -19,4 +20,6 @@ public interface ItemMapper extends BaseMapper<Item> {
     List<Item> listRecord(Item item);
 
     List<Item> listRecordEcharts(EchartsInVo inVo);
+
+    List<Item> listRecordEchartsNew(EchartsInVo inVo);
 }

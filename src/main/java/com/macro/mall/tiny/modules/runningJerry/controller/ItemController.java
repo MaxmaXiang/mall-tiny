@@ -7,6 +7,7 @@ import com.macro.mall.tiny.common.api.CommonResult;
 import com.macro.mall.tiny.modules.runningJerry.model.Item;
 
 import com.macro.mall.tiny.modules.runningJerry.service.ItemService;
+import com.macro.mall.tiny.modules.runningJerry.vo.ChartVo;
 import com.macro.mall.tiny.modules.runningJerry.vo.EchartsInVo;
 import com.macro.mall.tiny.modules.runningJerry.vo.EchartVo;
 import com.macro.mall.tiny.modules.runningJerry.vo.ItemVo;
@@ -68,7 +69,7 @@ public class ItemController {
     @ApiOperation(value = "查询图表")
     @RequestMapping(value = "/queryEcharts", method = RequestMethod.POST)
     @ResponseBody
-    public CommonResult<List<EchartVo>> queryEcharts(@Validated @RequestBody EchartsInVo inVo) {
+    public CommonResult<List<ChartVo>> queryEcharts(@Validated @RequestBody EchartsInVo inVo) {
         return itemService.queryEcharts(inVo);
     }
 
