@@ -53,7 +53,7 @@
         SELECT
             item_record.date,
             item_type itemType,
-            sum(item.`value`) value
+            sum(item_record.`value`) value
         FROM
             item
                 INNER JOIN item_record ON item.id = item_record.item_id
